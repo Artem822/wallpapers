@@ -100,12 +100,28 @@ def cart_view(request):
 @login_required
 def add_to_cart(request, product_id):
     product = get_object_or_404(Product, id=product_id)
+    
+    # Проверяем наличие товара на складе
+    if product.stock <= 0:
+        messages.error(request, f'{product.name} нет в наличии')
+        return redirect('product_detail', product_id=product_id)
+    
     cart, created = Cart.objects.get_or_create(user=request.user)
     
+    # Проверяем, не превышает ли запрашиваемое количество доступное
     cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
     if not created:
+        if cart_item.quantity + 1 > product.stock:
+            messages.error(request, f'Недостаточно товара {product.name} на складе')
+            return redirect('cart')
         cart_item.quantity += 1
         cart_item.save()
+    else:
+        if cart_item.quantity > product.stock:
+            messages.error(request, f'Недостаточно товара {product.name} на складе')
+            cart_item.delete()
+            return redirect('cart')
+    
     messages.success(request, f'{product.name} добавлен в корзину')
     return redirect('cart')
 
@@ -120,6 +136,11 @@ def remove_from_cart(request, item_id):
 def update_cart_item(request, item_id):
     cart_item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
     quantity = int(request.POST.get('quantity', 1))
+    
+    # Проверяем, не превышает ли новое количество доступное на складе
+    if quantity > cart_item.product.stock:
+        messages.error(request, f'Недостаточно товара {cart_item.product.name} на складе')
+        return redirect('cart')
     
     if quantity > 0:
         cart_item.quantity = quantity
@@ -137,127 +158,11 @@ def checkout(request):
         messages.warning(request, 'Ваша корзина пуста')
         return redirect('cart')
     
-    if request.method == 'POST':
-        # Обновляем данные пользователя
-        user = request.user
-        user.first_name = request.POST.get('first_name', '')
-        user.last_name = request.POST.get('last_name', '')
-        user.email = request.POST.get('email', '')
-        user.phone = request.POST.get('phone', '')
-        user.country = request.POST.get('country', '')
-        user.city = request.POST.get('city', '')
-        user.postal_code = request.POST.get('postal_code', '')
-        user.address = request.POST.get('address', '')
-        user.save()
-        
-        # Создаем заказ
-        order_data = {
-            'user': request.user,
-            'delivery_method': request.POST.get('delivery_method', 'pickup'),
-            'payment_method': request.POST.get('payment_method', 'online'),
-            'total_price': cart.total_price() + (500 if request.POST.get('delivery_method') == 'delivery' else 0),
-            'shipping_address': user.get_full_address(),
-            'shipping_city': user.city,
-            'shipping_zip_code': user.postal_code,
-            'customer_notes': request.POST.get('customer_notes', '')
-        }
-        
-        order = Order.objects.create(
-            user=request.user,
-            delivery_method=request.POST.get('delivery_method', 'pickup'),
-            payment_method=request.POST.get('payment_method', 'online'),
-            total_price=cart.total_price() + (500 if request.POST.get('delivery_method') == 'delivery' else 0)
-        )
-        # Добавляем товары в заказ
-        for item in cart.items.all():
-            OrderItem.objects.create(
-                order=order,
-                product=item.product,
-                quantity=item.quantity,
-                price=item.product.price
-            )
-        
-        # Очищаем корзину
-        cart.items.all().delete()
-        
-        messages.success(request, f'Заказ успешно оформлен! Номер вашего заказа: #{order.id}')
-        return redirect('order_detail', order_id=order.id)
-    
-    context = {
-        'cart': cart,
-    }
-    return render(request, 'store/checkout.html', context)
-
-
-@user_passes_test(is_admin)
-def admin_product_list(request):
-    products = Product.objects.all()
-    context = {'products': products}
-    return render(request, 'store/admin/product_list.html', context)
-
-@user_passes_test(is_admin)
-def admin_product_create(request):
-    if request.method == 'POST':
-        form = ProductForm(request.POST, request.FILES)
-        if form.is_valid():
-            product = form.save()
-            messages.success(request, 'Товар успешно добавлен')
-            return redirect('admin_product_list')
-    else:
-        form = ProductForm()
-    return render(request, 'store/admin/product_form.html', {'form': form})
-
-@user_passes_test(is_admin)
-def admin_product_edit(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-    if request.method == 'POST':
-        form = ProductForm(request.POST, request.FILES, instance=product)
-        if form.is_valid():
-            product = form.save()
-            
-            messages.success(request, 'Товар успешно обновлен')
-            return redirect('admin_product_list')
-    else:
-        form = ProductForm(instance=product)
-    return render(request, 'store/admin/product_form.html', {'form': form})
-
-@user_passes_test(is_admin)
-def admin_product_delete(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-    if request.method == 'POST':
-        product_name = product.name
-        product_id = product.id
-        product.delete()
-        product.delete()
-        messages.success(request, 'Товар успешно удален')
-        return redirect('admin_product_list')
-    return render(request, 'store/admin/product_confirm_delete.html', {'product': product})
-
-@user_passes_test(is_admin)
-def admin_category_create(request):
-    """Создание новой категории"""
-    if request.method == 'POST':
-        form = CategoryForm(request.POST)
-        if form.is_valid():
-            category = form.save()
-            messages.success(request, f'Категория "{category.name}" успешно создана')
-            return redirect('admin_category_list')
-    else:
-        form = CategoryForm()
-    
-    context = {
-        'form': form,
-        'is_edit': False,
-    }
-    return render(request, 'store/admin/category_form.html', context)
-
-@login_required
-def checkout(request):
-    cart = get_object_or_404(Cart, user=request.user)
-    
-    if not cart.items.exists():
-        messages.warning(request, 'Ваша корзина пуста')
-        return redirect('cart')
+    # Проверяем наличие всех товаров перед оформлением заказа
+    for item in cart.items.all():
+        if item.quantity > item.product.stock:
+            messages.error(request, f'Недостаточно товара {item.product.name} на складе')
+            return redirect('cart')
     
     if request.method == 'POST':
         # Обновляем данные пользователя
@@ -283,7 +188,7 @@ def checkout(request):
             shipping_zip_code=user.postal_code
         )
         
-        # Добавляем товары в заказ
+        # Добавляем товары в заказ и уменьшаем количество на складе
         for item in cart.items.all():
             OrderItem.objects.create(
                 order=order,
@@ -291,6 +196,11 @@ def checkout(request):
                 quantity=item.quantity,
                 price=item.product.price
             )
+            
+            # Уменьшаем количество товара на складе
+            product = item.product
+            product.stock -= item.quantity
+            product.save()
         
         # Очищаем корзину
         cart.items.all().delete()
@@ -303,10 +213,80 @@ def checkout(request):
     }
     return render(request, 'store/checkout.html', context)
 
+@user_passes_test(is_admin)
+def admin_product_list(request):
+    products = Product.objects.all()
+    context = {'products': products}
+    return render(request, 'store/admin/product_list.html', context)
+
+@user_passes_test(is_admin)
+def admin_product_create(request):
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES)
+        if form.is_valid():
+            product = form.save()
+            messages.success(request, 'Товар успешно добавлен')
+            return redirect('admin_product_list')
+    else:
+        form = ProductForm()
+    return render(request, 'store/admin/product_form.html', {'form': form})
+
+@user_passes_test(is_admin)
+def admin_product_edit(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES, instance=product)
+        if form.is_valid():
+            # Проверяем, не уменьшается ли количество товара ниже 0
+            if 'stock' in form.changed_data:
+                new_stock = form.cleaned_data['stock']
+                if new_stock < 0:
+                    messages.error(request, 'Количество товара не может быть отрицательным')
+                    return render(request, 'store/admin/product_form.html', {'form': form})
+            
+            product = form.save()
+            
+            messages.success(request, 'Товар успешно обновлен')
+            return redirect('admin_product_list')
+    else:
+        form = ProductForm(instance=product)
+    return render(request, 'store/admin/product_form.html', {'form': form})
+
+@user_passes_test(is_admin)
+def admin_product_delete(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    if request.method == 'POST':
+        product_name = product.name
+        product_id = product.id
+        product.delete()
+        messages.success(request, 'Товар успешно удален')
+        return redirect('admin_product_list')
+    return render(request, 'store/admin/product_confirm_delete.html', {'product': product})
+
+@user_passes_test(is_admin)
+def admin_category_create(request):
+    """Создание новой категории"""
+    if request.method == 'POST':
+        form = CategoryForm(request.POST)
+        if form.is_valid():
+            category = form.save()
+            messages.success(request, f'Категория "{category.name}" успешно создана')
+            return redirect('admin_category_list')
+    else:
+        form = CategoryForm()
+    
+    context = {
+        'form': form,
+        'is_edit': False,
+    }
+    return render(request, 'store/admin/category_form.html', context)
+
 @login_required
 def profile(request):
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
-    context = {'orders': orders}
+    categories = Category.objects.all()
+    context = {'orders': orders,
+               'categories':categories}
     return render(request, 'store/profile.html', context)
 
 @login_required
@@ -354,6 +334,12 @@ def cancel_order(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
     
     if order.status == 'new':
+        # Возвращаем товары на склад при отмене заказа
+        for item in order.items.all():
+            product = item.product
+            product.stock += item.quantity
+            product.save()
+        
         order.status = 'cancelled'
         order.save()
         messages.success(request, 'Заказ успешно отменен')
@@ -486,8 +472,27 @@ def admin_order_detail(request, order_id):
     if request.method == 'POST':
         # Обновление статуса заказа
         new_status = request.POST.get('status')
-        if new_status:
+        old_status = order.status
+        
+        if new_status and new_status != old_status:
+            # Если заказ отменяется, возвращаем товары на склад
+            if new_status == 'cancelled' and old_status != 'cancelled':
+                for item in order.items.all():
+                    product = item.product
+                    product.stock += item.quantity
+                    product.save()
+            # Если заказ восстанавливается из отмены, уменьшаем количество товаров
+            elif old_status == 'cancelled' and new_status != 'cancelled':
+                for item in order.items.all():
+                    product = item.product
+                    if item.quantity > product.stock:
+                        messages.error(request, f'Недостаточно товара {product.name} на складе для восстановления заказа')
+                        return redirect('admin_order_detail', order_id=order.id)
+                    product.stock -= item.quantity
+                    product.save()
+            
             order.status = new_status
+        
         # Добавление/обновление заметок
         admin_notes = request.POST.get('admin_notes')
         if admin_notes is not None:
@@ -636,8 +641,6 @@ def admin_category_delete(request, category_id):
     
     if request.method == 'POST':
         category_name = category.name
-        category_id = category.id
-        category.delete()
         category.delete()
         messages.success(request, f'Категория "{category_name}" успешно удалена')
         return redirect('admin_category_list')
@@ -688,6 +691,13 @@ def admin_order_delete(request, order_id):
         order = get_object_or_404(Order, id=order_id)
         
         if request.method == 'POST':
+            # Возвращаем товары на склад при удалении заказа
+            if order.status != 'cancelled':
+                for item in order.items.all():
+                    product = item.product
+                    product.stock += item.quantity
+                    product.save()
+            
             order_id = order.id
             order.delete()
             messages.success(request, f'Заказ #{order_id} успешно удален')
@@ -701,4 +711,3 @@ def admin_order_delete(request, order_id):
     except Exception as e:
         messages.error(request, f'Ошибка при удалении заказа: {str(e)}')
         return redirect('admin_order_list')
-    
