@@ -189,7 +189,7 @@
     "model": "store.Product",
     "pk": 1,
     "fields": {
-      "name": "Виниловые обои 'Саванна'",
+      "name": "Виниловые обои «Саванна»",
       "description": "Влагостойкие обои с текстурой под натуральные материалы",
       "price": "1899.99",
       "image": "products/savanna.jpg",
@@ -204,7 +204,7 @@
     "model": "store.Product",
     "pk": 2,
     "fields": {
-      "name": "Флизелиновые обои 'Элеганс'",
+      "name": "Флизелиновые обои «Элеганс»",
       "description": "Качественные обои под покраску с рельефным узором",
       "price": "2199.99",
       "image": "products/elegance.jpg",
@@ -219,7 +219,7 @@
     "model": "store.Product",
     "pk": 3,
     "fields": {
-      "name": "Бумажные обои 'Детский мир'",
+      "name": "Бумажные обои «Детский мир»",
       "description": "Яркие обои с мультяшными персонажами для детской комнаты",
       "price": "899.99",
       "image": "products/kids_world.jpg",
@@ -234,7 +234,7 @@
     "model": "store.Product",
     "pk": 4,
     "fields": {
-      "name": "Фотообои 'Городской пейзаж'",
+      "name": "Фотообои «Городской пейзаж»",
       "description": "Панорамные фотообои с видом на современный мегаполис",
       "price": "4599.99",
       "image": "products/cityscape.jpg",
@@ -249,7 +249,7 @@
     "model": "store.Product",
     "pk": 5,
     "fields": {
-      "name": "Текстильные обои 'Лен'",
+      "name": "Текстильные обои «Лен»",
       "description": "Элитные обои с натуральными льняными волокнами",
       "price": "3899.99",
       "image": "products/linen.jpg",
@@ -264,8 +264,8 @@
     "model": "store.Product",
     "pk": 6,
     "fields": {
-      "name": "Стеклообои 'Рогожка'",
-      "description": "Прочные стеклообои с классическим узором 'рогожка'",
+      "name": "Стеклообои «Рогожка»",
+      "description": "Прочные стеклообои с классическим узором «рогожка»",
       "price": "2799.99",
       "image": "products/basketweave.jpg",
       "stock": 20,

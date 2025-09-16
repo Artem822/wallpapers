@@ -35,7 +35,10 @@
                     <h5 class="card-title">{{ product.name }}</h5>
                     <p class="card-text text-muted small mb-2">{{ product.description|truncatewords:15 }}</p>
                     <div class="d-flex justify-content-between align-items-center mt-3">
-                        <span class="fw-bold text-primary">{{ product.price }} руб.</span>
+                        <div>
+                                <span class="fw-bold text-primary">{{ product.price }} руб.</span>
+                                <small class="text-muted">за рулон</small>
+                            </div>
                         <span class="badge bg-light text-dark border">{{ product.category.name }}</span>
                     </div>
                 </div>
@@ -151,7 +154,10 @@
                         <h5 class="card-title">{{ product.name }}</h5>
                         <p class="card-text text-muted small mb-2">{{ product.description|truncatewords:15 }}</p>
                         <div class="d-flex justify-content-between align-items-center mt-3">
-                            <span class="fw-bold text-primary">{{ product.price }} руб.</span>
+                            <div>
+                                <span class="fw-bold text-primary">{{ product.price }} руб.</span>
+                                <small class="text-muted">за рулон</small>
+                            </div>
                             <span class="badge bg-light text-dark border">{{ product.category.name }}</span>
                         </div>
                     </div>

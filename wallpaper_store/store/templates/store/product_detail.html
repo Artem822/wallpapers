@@ -11,7 +11,10 @@
         <div class="card">
             <div class="card-body">
                 <h1 class="h3">{{ product.name }}</h1>
-                <p class="lead text-primary fw-bold">{{ product.price }} руб.</p>
+                <div>
+                <span class="lead text-primary fw-bold">{{ product.price }} руб.</span>
+                <small class="text-muted">за рулон</small>
+                <div>
                 <p class="mb-3">{{ product.description }}</p>
                 
                 <div class="d-flex align-items-center mb-3">
