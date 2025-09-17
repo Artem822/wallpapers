@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models 
-from django.template.defaultfilters import slugify
+import pytils
 from django.urls import reverse
 
 class User(AbstractUser):
@@ -84,7 +84,7 @@ class Category(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            self.slug = pytils.translit.slugify(self.name)
         super().save(*args, **kwargs)
         
     def __str__(self):

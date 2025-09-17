@@ -59,22 +59,4 @@
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Автогенерация slug из названия
-        const nameField = document.getElementById('id_name');
-        const slugField = document.getElementById('id_slug');
-        
-        nameField.addEventListener('blur', function() {
-            if (!slugField.value) {
-                // Преобразуем название в slug
-                const slug = nameField.value
-                    .toLowerCase()
-                    .replace(/[^\w\u0400-\u04FF]+/g, '-')
-                    .replace(/^-+|-+$/g, '');
-                slugField.value = slug;
-            }
-        });
-    });
-</script>
 {% endblock %}
